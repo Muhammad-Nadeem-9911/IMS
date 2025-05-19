@@ -1,0 +1,46 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Ensure body background matches the theme's default if not already handled by CssBaseline */
+  /* background-color: #F8F9FA; /* Ashwhite - This should be handled by CssBaseline from theme.js */
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom Scrollbar for WebKit browsers (Chrome, Safari, Edge, Opera) */
+/* Targetting the MuiDrawer-paper class specifically for the sidebar scrollbar */
+.MuiDrawer-paper::-webkit-scrollbar {
+  width: 8px; /* Width of the scrollbar */
+  height: 8px; /* Height of the scrollbar (for horizontal scrollbars, though less common in sidebars) */
+}
+
+.MuiDrawer-paper::-webkit-scrollbar-track {
+  background: #2C2C2C; /* Slightly lighter than the drawer background, or use theme.palette.background.paper if drawer is white */
+  /* If your drawer is black (#212529), a track like #333 or #404040 might look good */
+  /* For the black sidebar, let's use a dark grey track */
+  background: #404040; /* Dark grey track for black sidebar */
+  border-radius: 10px;
+}
+
+.MuiDrawer-paper::-webkit-scrollbar-thumb {
+  background-color: #6C757D; /* Your theme's secondary.main color (Medium Grey) */
+  border-radius: 10px;
+  border: 2px solid #404040; /* Creates padding around thumb, matches track color */
+}
+
+.MuiDrawer-paper::-webkit-scrollbar-thumb:hover {
+  background-color: #A8B0B6; /* Your theme's secondary.light color for hover */
+}
+
+/* Basic Scrollbar styling for Firefox */
+.MuiDrawer-paper {
+  scrollbar-width: thin; /* "auto" or "thin" */
+  scrollbar-color: #6C757D #404040; /* thumb-color track-color */
+}
