@@ -5,10 +5,42 @@ const Product = require('../models/Product');
 // @access  Private (to be protected)
 exports.getProducts = async (req, res, next) => {
     try {
-        const products = await Product.find().populate('supplier', 'name email').sort({ name: 1 }); // Populate supplier name and email
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const searchTerm = req.query.search || '';
+
+        const query = {};
+
+        if (searchTerm) {
+            const regex = new RegExp(searchTerm, 'i'); // 'i' for case-insensitive
+            query.$or = [
+                { name: regex },
+                { sku: regex },
+                { category: regex },
+                // If you want to search by supplier name (assuming supplier is populated and 'name' is a field on supplier)
+                // This requires a more complex query or doing it after populating.
+                // For simplicity, we'll stick to direct product fields for now.
+                // If supplier is an ObjectId and you want to search by supplier name,
+                // you'd typically fetch matching supplier IDs first, then use $in for product.supplier.
+            ];
+        }
+
+        const startIndex = (page - 1) * limit;
+
+        const total = await Product.countDocuments(query);
+        const products = await Product.find(query)
+            .populate('supplier', 'name email') // Populate supplier name and email
+            .sort({ name: 1 }) // Sort by name
+            .skip(startIndex)
+            .limit(limit);
+
         res.status(200).json({
             success: true,
-            count: products.length,
+            count: total, // Total matching documents for pagination
+            pagination: { // Optional: send pagination metadata
+                currentPage: page,
+                totalPages: Math.ceil(total / limit),
+            },
             data: products
         });
     } catch (error) {

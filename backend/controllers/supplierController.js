@@ -4,12 +4,32 @@ const Supplier = require('../models/Supplier');
 // @route   GET /api/suppliers
 // @access  Private (adjust based on your auth rules)
 exports.getSuppliers = async (req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const searchTerm = req.query.search || '';
+
+    const query = {};
+
+    if (searchTerm) {
+        const regex = new RegExp(searchTerm, 'i'); // 'i' for case-insensitive
+        query.$or = [
+            { name: regex },
+            { contactPerson: regex },
+            { email: regex },
+            // Add other fields you want to search by, e.g., phone
+            // { phone: regex }
+        ];
+    }
+
+    const startIndex = (page - 1) * limit;
+
     try {
-        const suppliers = await Supplier.find().sort({ name: 1 }); // Sort by name
-        res.json({ success: true, count: suppliers.length, data: suppliers });
+        const total = await Supplier.countDocuments(query);
+        const suppliers = await Supplier.find(query).sort({ name: 1 }).skip(startIndex).limit(limit);
+        res.json({ success: true, count: total, data: suppliers });
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error fetching suppliers' });
     }
 };
 

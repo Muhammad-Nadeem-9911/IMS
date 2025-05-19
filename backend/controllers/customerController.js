@@ -5,11 +5,39 @@ const asyncHandler = require('express-async-handler'); // Assuming you use this 
 // @route   GET /api/customers
 // @access  Private
 exports.getCustomers = asyncHandler(async (req, res, next) => {
-    // Add pagination later if needed
-    const customers = await Customer.find().sort({ name: 1 }); // Sort by name
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const searchTerm = req.query.search || '';
+
+    const query = {};
+
+    if (searchTerm) {
+        const regex = new RegExp(searchTerm, 'i'); // 'i' for case-insensitive
+        query.$or = [
+            { name: regex },
+            { email: regex },
+            { phone: regex },
+            // You can add more fields to search here, e.g., address fields
+            // { 'address.city': regex },
+            // { 'address.street': regex },
+        ];
+    }
+
+    const startIndex = (page - 1) * limit;
+
+    const total = await Customer.countDocuments(query);
+    const customers = await Customer.find(query)
+        .sort({ name: 1 }) // Sort by name
+        .skip(startIndex)
+        .limit(limit);
+
     res.status(200).json({
         success: true,
-        count: customers.length,
+        count: total, // Total matching documents for pagination
+        pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+        },
         data: customers
     });
 });

@@ -4,10 +4,17 @@ import { api } from '../api';
  * Fetches all suppliers.
  * @returns {Promise<Object>} The response from the API.
  */
-export const getSuppliers = async () => {
+export const getSuppliers = async (page = 1, limit = 10, searchTerm = '') => {
     try {
-        const response = await api.get('/suppliers');
-        return response.data; // Assuming the backend returns { success: true, data: [...] }
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (searchTerm) {
+            params.append('search', searchTerm);
+        }
+        // Assuming `api` is an Axios instance, construct URL with query params
+        const response = await api.get(`/suppliers?${params.toString()}`);
+        return response.data; // Expects { success: true, count: N, data: [...] }
     } catch (error) {
         console.error('Error fetching suppliers:', error.response || error.message);
         throw error.response?.data || { message: error.message || 'Failed to fetch suppliers' };

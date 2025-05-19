@@ -4,10 +4,16 @@ import { api } from '../api';
  * Fetches all purchase orders.
  * @returns {Promise<Object>} The response from the API.
  */
-export const getPurchaseOrders = async () => {
+export const getPurchaseOrders = async (page = 1, limit = 10, searchTerm = '') => {
     try {
-        const response = await api.get('/purchase-orders');
-        return response.data; // Assuming backend returns { success: true, count: number, data: [...] }
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (searchTerm) {
+            params.append('search', searchTerm);
+        }
+        const response = await api.get(`/purchase-orders?${params.toString()}`);
+        return response.data; // Expects { success: true, count: N, data: [...] }
     } catch (error) {
         console.error('Error fetching purchase orders:', error.response || error.message);
         throw error.response?.data || { message: error.message || 'Failed to fetch purchase orders' };

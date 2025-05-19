@@ -168,8 +168,88 @@ exports.generateInvoicePdfController = async (req, res, next) => {
 // @access  Private
 exports.getInvoices = async (req, res, next) => {
     try {
-        const invoices = await Invoice.find().populate('customer', 'name email').sort({ invoiceDate: -1 }); // Populate customer details
-        res.status(200).json({ success: true, count: invoices.length, data: invoices });
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const pageNumber = parseInt(page, 10);
+        const limitNumber = parseInt(limit, 10);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        let invoices = [];
+        let totalCount = 0;
+
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+
+            const lookupStage = {
+                $lookup: {
+                    from: 'customers', // Ensure this is the correct name of your customers collection
+                    localField: 'customer',
+                    foreignField: '_id',
+                    as: 'customerDetails'
+                }
+            };
+
+            const unwindCustomerStage = {
+                $unwind: {
+                    path: '$customerDetails',
+                    preserveNullAndEmptyArrays: true // Keep invoices even if customer is not found/linked
+                }
+            };
+
+            const matchStage = {
+                $match: {
+                    $or: [
+                        { invoiceNumber: searchRegex },
+                        { 'customerDetails.name': searchRegex } // Search on the looked-up customer name
+                    ]
+                }
+            };
+
+            const projectStage = { // To reshape the customer field like populate did
+                $project: {
+                    // Pass through all original invoice fields
+                    invoiceNumber: 1,
+                    invoiceDate: 1,
+                    dueDate: 1,
+                    items: 1,
+                    subTotal: 1,
+                    taxRate: 1,
+                    taxAmount: 1,
+                    grandTotal: 1,
+                    status: 1,
+                    notes: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    // Reshape customer field
+                    customer: {
+                        _id: '$customerDetails._id',
+                        name: '$customerDetails.name',
+                        email: '$customerDetails.email'
+                        // Add other customer fields if they were previously populated and used by frontend
+                    }
+                }
+            };
+
+            const countPipeline = [lookupStage, unwindCustomerStage, matchStage, { $count: "totalCount" }];
+            const countResult = await Invoice.aggregate(countPipeline);
+            totalCount = countResult.length > 0 ? countResult[0].totalCount : 0;
+
+            if (totalCount > 0) {
+                const dataPipeline = [
+                    lookupStage,
+                    unwindCustomerStage,
+                    matchStage,
+                    { $sort: { invoiceDate: -1 } },
+                    { $skip: skip },
+                    { $limit: limitNumber },
+                    projectStage // Apply projection to shape the output
+                ];
+                invoices = await Invoice.aggregate(dataPipeline);
+            }
+        } else {
+            invoices = await Invoice.find({}).populate('customer', 'name email').sort({ invoiceDate: -1 }).skip(skip).limit(limitNumber);
+            totalCount = await Invoice.countDocuments({});
+        }
+        res.status(200).json({ success: true, count: totalCount, data: invoices });
     } catch (error) {
         console.error('Get Invoices Error:', error.message);
         res.status(500).json({ success: false, message: 'Server Error' });

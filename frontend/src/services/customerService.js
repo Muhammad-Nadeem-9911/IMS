@@ -17,11 +17,20 @@ const axiosAuth = () => {
     });
 };
 
-export const getCustomers = async () => {
+export const getCustomers = async (page = 1, limit = 10, searchTerm = '') => {
     try {
-        const res = await axiosAuth().get('/');
-        return res.data; // { success: true, count: N, data: [...] }
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (searchTerm) {
+            params.append('search', searchTerm);
+        }
+        // The backend should ideally return a structure like:
+        // { success: true, count: TotalNumberOfMatchingCustomers, data: [CustomerForCurrentPage] }
+        const res = await axiosAuth().get(`/?${params.toString()}`);
+        return res.data;
     } catch (err) {
+        // Keep existing error handling
         const message = (err.response && err.response.data && err.response.data.message) || err.message || err.toString();
         throw new Error(message);
     }

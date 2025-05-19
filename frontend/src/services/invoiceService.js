@@ -17,9 +17,16 @@ const axiosAuth = () => {
     });
 };
 
-export const getInvoices = async () => {
+export const getInvoices = async (page = 1, limit = 10, searchTerm = '') => {
     try {
-        const res = await axiosAuth().get('/');
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (searchTerm) {
+            // URLSearchParams handles encoding, so encodeURIComponent is not explicitly needed here
+            params.append('search', searchTerm);
+        }
+        const res = await axiosAuth().get(`/?${params.toString()}`);
         return res.data; // { success: true, count: N, data: [...] }
     } catch (err) {
         const message = (err.response && err.response.data && err.response.data.message) || err.message || err.toString();

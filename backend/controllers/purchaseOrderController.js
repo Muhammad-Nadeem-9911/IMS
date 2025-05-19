@@ -23,12 +23,76 @@ async function getNextPoNumber() {
 // @route   GET /api/purchase-orders
 // @access  Private (e.g., Admin, Manager, Purchaser)
 exports.getPurchaseOrders = async (req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const searchTerm = req.query.search || '';
+    const skip = (page - 1) * limit;
+
+    let purchaseOrders = [];
+    let totalCount = 0;
+
     try {
-        const purchaseOrders = await PurchaseOrder.find()
-            .populate('supplier', 'name')
-            .populate('items.product', 'name sku')
-            .sort({ orderDate: -1 });
-        res.json({ success: true, count: purchaseOrders.length, data: purchaseOrders });
+        if (searchTerm) {
+            const searchRegex = new RegExp(searchTerm, 'i');
+            const lookupSupplierStage = {
+                $lookup: {
+                    from: 'suppliers', // Collection name for suppliers
+                    localField: 'supplier',
+                    foreignField: '_id',
+                    as: 'supplierDetails'
+                }
+            };
+            const unwindSupplierStage = {
+                $unwind: {
+                    path: '$supplierDetails',
+                    preserveNullAndEmptyArrays: true
+                }
+            };
+            const matchStage = {
+                $match: {
+                    $or: [
+                        { poNumber: searchRegex },
+                        { 'supplierDetails.name': searchRegex },
+                        { status: searchRegex } // Optionally search by status
+                    ]
+                }
+            };
+            // Project stage to reshape supplier and populate items.product
+            // Populating nested arrays like 'items.product' within an aggregation is complex.
+            // A simpler approach for now is to populate after aggregation if performance allows,
+            // or do a multi-stage lookup if 'items.product' details are needed for search/filtering.
+            // For display, we will populate 'items.product' after the main aggregation.
+
+            const countPipeline = [lookupSupplierStage, unwindSupplierStage, matchStage, { $count: "totalCount" }];
+            const countResult = await PurchaseOrder.aggregate(countPipeline);
+            totalCount = countResult.length > 0 ? countResult[0].totalCount : 0;
+
+            if (totalCount > 0) {
+                const dataPipeline = [
+                    lookupSupplierStage,
+                    unwindSupplierStage,
+                    matchStage,
+                    { $sort: { orderDate: -1 } },
+                    { $skip: skip },
+                    { $limit: limit }, // Use the correctly defined 'limit' variable
+                    // We need to ensure the 'supplier' field is structured as expected by frontend after lookup
+                    { $addFields: { supplier: '$supplierDetails' } }, // Overwrite/set supplier with the looked-up details
+                    { $project: { supplierDetails: 0 } } // Remove the temporary supplierDetails field
+                ];
+                purchaseOrders = await PurchaseOrder.aggregate(dataPipeline);
+                // Manually populate items.product for the aggregated results
+                await PurchaseOrder.populate(purchaseOrders, { path: 'items.product', select: 'name sku' });
+            }
+        } else {
+            totalCount = await PurchaseOrder.countDocuments({});
+            purchaseOrders = await PurchaseOrder.find({})
+                .populate('supplier', 'name')
+                .populate('items.product', 'name sku')
+                .sort({ orderDate: -1 })
+                .skip(skip)
+                .limit(limit);
+        }
+        res.json({ success: true, count: totalCount, data: purchaseOrders });
     } catch (err) {
         console.error('Error getting purchase orders:', err.message);
         res.status(500).json({ success: false, message: 'Server Error' });
