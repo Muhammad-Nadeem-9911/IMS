@@ -143,7 +143,7 @@ function App() {
             {user && (user.role === 'admin' || user.role === 'manager') && ( // Reports for Admin & Manager
               <>
                 <RouterListItem to="/reports/sales-summary" primary="Reports" icon={<SummarizeIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
-                <RouterListItem to="/reports/purchase-orders" primary="PO Report" icon={<ShoppingCartIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
+                <RouterListItem to="/reports/purchase-orders" primary="Purchase Report" icon={<ShoppingCartIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
                 <RouterListItem to="/reports/transactions" primary="Transaction Report" icon={<FilterListIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
                 <RouterListItem to="/chart-of-accounts" primary="Chart of Accounts" icon={<MenuBookIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
                 <RouterListItem to="/general-journal" primary="General Journal" icon={<LibraryBooksIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
