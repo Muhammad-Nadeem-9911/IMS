@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useEffect, useState, Suspense } from 'react'; // Import Suspense
+import React, { useState, Suspense } from 'react'; // Removed useEffect
 import { BrowserRouter as Router, Route, Routes, Link as RouterLink, useNavigate } from 'react-router-dom'; // Updated imports
 import LoginPage from './pages/LoginPage';
 // import RegisterPage from './pages/RegisterPage'; // Removed as per previous decision
@@ -7,18 +7,18 @@ import { useAuthState, useAuthDispatch } from './contexts/AuthContext';
 import ProductsPage from './pages/ProductsPage'; // Import ProductsPage
 import ProductForm from './components/ProductForm'; // Import ProductForm
 import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute
-import InvoicesPage from './pages/InvoicesPage'; // Import InvoicesPage
+import InvoicesPage from './pages/InvoicesPage';
 import InvoiceForm from './components/InvoiceForm'; // Import InvoiceForm
 import CompanyProfilePage from './pages/CompanyProfilePage'; // Import CompanyProfilePage
 import ViewInvoicePage from './pages/ViewInvoicePage';
 import CustomersPage from './pages/CustomersPage'; // Import CustomersPage
 import SalesSummaryReportPage from './pages/SalesSummaryReportPage'; // Import Sales Summary Report Page
 import CustomerForm from './components/customers/CustomerForm'; // Import CustomerForm
-import { logout } from './services/authService'; 
-import { getProductStatsByCategory } from './services/productService';
+import { logout } from './services/authService';
+import { getCompanyProfile } from './services/companyProfileService'; // Import service to get company profile
 import { ThemeProvider } from '@mui/material/styles'; // Import ThemeProvider
-import {
-    AppBar, Toolbar, Typography, Button, Box, Paper, Grid, CssBaseline, Drawer,
+import { // Removed Paper, Grid
+    AppBar, Toolbar, Typography, Button, Box, CssBaseline, Drawer,
     List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, Divider, CircularProgress
 } from '@mui/material'; // Added CssBaseline, Drawer, List components
 import HomeIcon from '@mui/icons-material/Home';
@@ -31,8 +31,7 @@ import BusinessIcon from '@mui/icons-material/Business'; // Icon for Company Pro
 import LogoutIcon from '@mui/icons-material/Logout';
 import PeopleIcon from '@mui/icons-material/People'; // Icon for Customers
 import SummarizeIcon from '@mui/icons-material/Summarize'; // Icon for Reports
-import { Bar } from 'react-chartjs-2';
-import StorefrontIcon from '@mui/icons-material/Storefront'; // Icon for Suppliers
+// import { Bar } from 'react-chartjs-2'; // Removed unused Bar import
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'; // Icon for Purchase Orders
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks'; // Icon for General Journal
 import AssessmentIcon from '@mui/icons-material/Assessment'; // Icon for Income Statement
@@ -40,26 +39,27 @@ import BalanceIcon from '@mui/icons-material/Balance'; // Icon for Balance Sheet
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // Icon for Trial Balance
 import MenuIcon from '@mui/icons-material/Menu'; // For Drawer toggle
 import MenuBookIcon from '@mui/icons-material/MenuBook'; // Icon for Ledger/Accounting
-import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'; // Icon for User Management
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import FilterListIcon from '@mui/icons-material/FilterList'; // Icon for Transaction Report
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
-  Title,
   Tooltip,
   Legend,
 } from 'chart.js';
 import theme from './theme'; // Import your custom theme
 
 // Lazy load components for better performance and to potentially resolve initialization issues
+const HomePage = React.lazy(() => import('./pages/HomePage')); // Import the new HomePage
 const ChartOfAccountsPage = React.lazy(() => import('./pages/ChartOfAccountsPage'));
 const AccountForm = React.lazy(() => import('./components/ledger/AccountForm'));
 const GeneralJournalPage = React.lazy(() => import('./pages/GeneralJournalPage'));
 const JournalEntryForm = React.lazy(() => import('./components/ledger/JournalEntryForm'));
 const TrialBalancePage = React.lazy(() => import('./pages/TrialBalancePage')); // Added TrialBalancePage
 const IncomeStatementPage = React.lazy(() => import('./pages/IncomeStatementPage')); // Added IncomeStatementPage
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage')); // Import the new DashboardPage
 const BalanceSheetPage = React.lazy(() => import('./pages/BalanceSheetPage')); // Added BalanceSheetPage
 const SuppliersPage = React.lazy(() => import('./pages/SuppliersPage')); // For Suppliers
 const SupplierForm = React.lazy(() => import('./components/suppliers/SupplierForm')); // For Suppliers
@@ -93,92 +93,11 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  Title,
   Tooltip,
   Legend
 );
 
-const DashboardPage = () => {
-  const { user } = useAuthState();
-  // Logout is now handled in the main Layout/Drawer
-  // const dispatch = useAuthDispatch();
-  // const handleLogout = () => logout(dispatch);
-  const [categoryChartData, setCategoryChartData] = useState(null);
-  const [chartError, setChartError] = useState('');
-
-  useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        const response = await getProductStatsByCategory();
-        if (response.success) {
-          const labels = response.data.map(item => item._id); // Category names
-          const dataCounts = response.data.map(item => item.count); // Counts
-
-          setCategoryChartData({
-            labels,
-            datasets: [
-              {
-                label: 'Products per Category',
-                data: dataCounts,
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1,
-              },
-            ],
-          });
-        } else {
-          setChartError(response.message || 'Failed to fetch category stats');
-        }
-      } catch (err) {
-        setChartError(err.message || 'Error fetching category stats.');
-      }
-    };
-
-    fetchChartData();
-  }, []);
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'top' },
-      title: { display: true, text: 'Product Distribution by Category' },
-    },
-    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } // Ensure y-axis starts at 0 and shows whole numbers
-  };
-
-  return (
-    <Paper elevation={3} sx={{ p: 3, width: '100%', flexGrow: 1, display: 'flex', flexDirection: 'column' }}> {/* Standardized sx */}
-      <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard
-      </Typography>
-      <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}> {/* Corrected: added item prop for direct children of container */}
-            <Typography variant="h6">
-            Welcome, {user ? user.name : 'Guest'}!
-          </Typography>
-          <Typography variant="body1">
-            Your role is: {user ? user.role : 'N/A'}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} md={6}> {/* This was already correct */}
-          {chartError && <Typography color="error">{chartError}</Typography>}
-          {categoryChartData ? (
-            <Bar options={chartOptions} data={categoryChartData} />
-          ) : (
-            !chartError && <Typography>Loading category chart data...</Typography>
-          )}
-        </Grid>
-        <Grid item xs={12} md={6}> {/* This was already correct */}
-          <Typography variant="body2">Other dashboard widgets or charts can go here.</Typography>
-        </Grid>
-        {/* Logout button moved to Drawer
-        <Grid item xs={12} sx={{mt: 2}}> 
-            <Button variant="contained" color="secondary" startIcon={<LogoutIcon />} onClick={handleLogout}>Logout</Button>
-        </Grid> */}
-      </Grid>
-    </Paper>
-  );
-};
+// Removed the old DashboardPage component definition from here
 
 function App() {
   const { isAuthenticated, user } = useAuthState(); // Get user from useAuthState here
@@ -193,7 +112,7 @@ function App() {
   const handleLogout = async () => {
     try {
       await logout(dispatch); // Assuming logout service/context function
-      navigate('/login'); // Redirect to login page
+      navigate('/'); // Redirect to login page
     } catch (error) {
       console.error('Logout failed:', error);
       // Optionally show a snackbar error
@@ -219,7 +138,7 @@ function App() {
             )}
             <RouterListItem to="/invoices" primary="Invoices" icon={<ReceiptIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
             <RouterListItem to="/customers" primary="Customers" icon={<PeopleIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
-            <RouterListItem to="/suppliers" primary="Suppliers" icon={<StorefrontIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
+            <RouterListItem to="/suppliers" primary="Suppliers" icon={<InventoryIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} /> {/* Using InventoryIcon for now, replace with StorefrontIcon if preferred */}
             <RouterListItem to="/purchase-orders" primary="Purchase Orders" icon={<ShoppingCartIcon />} onClick={mobileOpen ? handleDrawerToggle : undefined} />
             {user && (user.role === 'admin' || user.role === 'manager') && ( // Reports for Admin & Manager
               <>
@@ -261,9 +180,19 @@ function App() {
           >
             {isAuthenticated && <MenuIcon />} {/* Only show MenuIcon if authenticated */}
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {process.env.REACT_APP_WEBSITE_NAME || "IMS"}
-          </Typography>
+          {/* Static Logo (Icon + Text) */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}> {/* Container for logo icon and text */}
+            {/* You can choose an appropriate icon here */}
+            <InventoryIcon sx={{ mr: 1, fontSize: 28 }} /> {/* Example Icon */}
+            <Typography variant="h6" component="div">
+              {process.env.REACT_APP_WEBSITE_NAME || "IMS"}
+            </Typography>
+          </Box>
+
+          {/* This Box with flexGrow will push subsequent items (login/logout buttons) to the right */}
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Conditional Buttons for Login/Logout */}
           {!isAuthenticated && (
             <>
               <Button component={RouterLink} to="/" color="inherit" startIcon={<HomeIcon />}>Home</Button>
@@ -335,15 +264,7 @@ function App() {
       >
         <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 64px - 48px)' }}><CircularProgress /></Box>}>
         <Routes>
-          <Route 
-            path="/" 
-            element={
-              <Paper elevation={3} sx={{ p: 3, width: '100%', flexGrow: 1 }}>
-                <Typography variant="h4">Home Page</Typography>
-                <Typography>Welcome to the Inventory Management System.</Typography>
-              </Paper>
-            } 
-          />
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           {/* <Route path="/register" element={<RegisterPage />} /> */}
           

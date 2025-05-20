@@ -5,6 +5,17 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './contexts/AuthContext';
 import { SnackbarProvider } from './contexts/SnackbarContext';
+
+// Import and register Chart.js components globally
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  Title, // Title is used in chartOptions
+  // Add other chart types/scales if you use them elsewhere (e.g., CategoryScale, LinearScale, BarElement for bar charts)
+);
+
 // Removed ThemeProvider, createTheme, CssBaseline imports and usage from here
 // ThemeProvider and CssBaseline are now handled in App.js using the custom theme
 
