@@ -26,11 +26,19 @@ exports.getSalesSummary = asyncHandler(async (req, res, next) => {
         dateFilter.invoiceDate = { $lte: new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 1)) };
     }
 
+    // Calculate number of non-void invoices
+    const numberOfInvoicesResult = await Invoice.aggregate([
+        { $match: { ...dateFilter, status: { $ne: 'void' } } },
+        { $count: 'count' }
+    ]);
+    const numberOfInvoices = numberOfInvoicesResult.length > 0 ? numberOfInvoicesResult[0].count : 0;
+
     // Calculate total invoiced amount (sum of grandTotal for non-void invoices)
     const totalInvoicedResult = await Invoice.aggregate([
         { $match: { ...dateFilter, status: { $ne: 'void' } } }, // Exclude void invoices
         { $group: { _id: null, totalInvoiced: { $sum: '$grandTotal' } } }
     ]);
+    
     const totalInvoiced = totalInvoicedResult.length > 0 ? totalInvoicedResult[0].totalInvoiced : 0;
 
     // Calculate total paid amount (sum of totalPaid for non-void invoices)
@@ -56,13 +64,16 @@ exports.getSalesSummary = asyncHandler(async (req, res, next) => {
 
 
     const balanceDue = totalInvoiced - totalPaid;
+    const averageInvoiceValue = numberOfInvoices > 0 ? totalInvoiced / numberOfInvoices : 0;
 
     res.status(200).json({
         success: true,
         data: {
             totalInvoiced,
             totalPaid,
-            balanceDue
+            balanceDue,
+            numberOfInvoices,
+            averageInvoiceValue
         }
     });
 });
