@@ -32,10 +32,30 @@ console.log(`[DEBUG] server.js: MONGO_URI is ${process.env.MONGO_URI ? 'set' : '
 const app = express();
 
 // Middleware
-// Enable CORS for requests from the client URL specified in .env
-app.use(cors({
-    origin: process.env.CLIENT_URL 
-}));
+// --- CORS Configuration ---
+// Option 1: Allow requests from your specific frontend origin (Recommended for production)
+const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : [];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    // or if the origin is in the allowedOrigins list
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      callback(new Error(msg), false);
+    }
+  },
+  credentials: true, // If you need to allow cookies or authorization headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Specify allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'] // Specify allowed headers
+};
+
+app.use(cors(corsOptions));
+
+// Option 2: Simpler for development if CLIENT_URL is not set (allows all origins)
+// if (!process.env.CLIENT_URL) { app.use(cors()); }
 console.log('[DEBUG] server.js: CORS middleware configured.');
 // To parse JSON request bodies
 app.use(express.json({ limit: '10mb' })); // Example: 10MB limit for JSON payloads
