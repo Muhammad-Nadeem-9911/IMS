@@ -69,18 +69,26 @@ exports.getDashboardStats = async (req, res) => {
 
         const startOfMonth = moment().startOf('month').toDate();
         const endOfMonth = moment().endOf('month').toDate();
+
         const salesThisMonthAggregation = await Invoice.aggregate([
-            { $match: { status: 'Paid', invoiceDate: { $gte: startOfMonth, $lte: endOfMonth } } },
+            { 
+                $match: { 
+                    invoiceDate: { $gte: startOfMonth, $lte: endOfMonth },
+                    status: { $ne: 'void' } // Consider all non-voided invoices for sales
+                    // If you specifically want only 'Paid' sales, revert to: status: 'Paid'
+                } 
+            },
             { $group: { _id: null, totalSales: { $sum: "$grandTotal" } } }
         ]);
         const salesThisMonth = salesThisMonthAggregation.length > 0 ? salesThisMonthAggregation[0].totalSales : 0;
 
         // Purchasing
+        const openPOStatuses = ['Received', 'Cancelled']; // Define for clarity
         const openPurchaseOrdersCount = await PurchaseOrder.countDocuments({
-            status: { $nin: ['Received', 'Cancelled'] } // Exclude Received and Cancelled POs
+            status: { $nin: openPOStatuses } 
         });
         const openPurchaseOrdersAmountAggregation = await PurchaseOrder.aggregate([
-            { $match: { status: { $nin: ['Received', 'Cancelled'] } } },
+            { $match: { status: { $nin: openPOStatuses } } },
             { $group: { _id: null, totalAmount: { $sum: "$grandTotal" } } }
         ]);
         const openPurchaseOrdersAmount = openPurchaseOrdersAmountAggregation.length > 0 ? openPurchaseOrdersAmountAggregation[0].totalAmount : 0;

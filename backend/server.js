@@ -1,5 +1,3 @@
-console.log('[DEBUG] server.js: Starting execution...');
-
 const dotenv = require('dotenv');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -21,13 +19,10 @@ const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes'); // Add this
 const userRoutes = require('./routes/userRoutes'); // Import user routes
 
 const seedDefaultAccounts = require('./utils/seedAccounts'); // Import the seeder
-console.log('[DEBUG] server.js: All route modules required.');
 
 // Load environment variables from .env file
 // Make sure this is at the top to ensure all environment variables are loaded before they are used.
 dotenv.config();
-console.log('[DEBUG] server.js: dotenv.config() called.');
-console.log(`[DEBUG] server.js: MONGO_URI is ${process.env.MONGO_URI ? 'set' : 'NOT SET'}`);
 
 const app = express();
 
@@ -56,7 +51,6 @@ app.use(cors(corsOptions));
 
 // Option 2: Simpler for development if CLIENT_URL is not set (allows all origins)
 // if (!process.env.CLIENT_URL) { app.use(cors()); }
-console.log('[DEBUG] server.js: CORS middleware configured.');
 // To parse JSON request bodies
 app.use(express.json({ limit: '10mb' })); // Example: 10MB limit for JSON payloads
 
