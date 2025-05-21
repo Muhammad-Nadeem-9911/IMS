@@ -60,19 +60,35 @@ const LoginPage = () => {
     return (
         <Container
             component="main"
-            maxWidth="lg" // Changed from 'xs' to 'lg' to accommodate two columns
-            sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            maxWidth="lg"
+            disableGutters // Remove default padding to allow Paper to control spacing
+            sx={{
+                height: '100%', // Set height to 100% of the viewport height
+                display: 'flex', // Enable flexbox
+                alignItems: 'center', // Vertically center the flex item (Paper)
+                justifyContent: 'center', // Horizontally center the flex item (Paper)
+                padding: 0, // We will now control padding more specifically
+                // Add padding to the Container itself.
+                // This padding will "push" the Paper component inwards,
+                // effectively reducing the space it can occupy and ensuring space around it.
+                paddingTop: '5.5vh',    // Applying paddingTop from your CSS snippet
+                //paddingBottom: '0vh',   // Applying paddingBottom from your CSS snippet (can also be 0)
+                boxSizing: 'border-box', // Crucial: ensures padding is within the 100vh height
+            }}
         >
-            <Paper 
-                elevation={6} 
-                sx={{ 
-                    display: 'flex', // Make Paper a flex container
+            <Paper
+                elevation={6}
+                sx={{
+                    display: 'flex',
                     flexDirection: { xs: 'column', sm: 'row' }, // Stack on xs, row on sm+
-                    borderRadius: 2, 
-                    overflow: 'hidden', 
-                    width: '100%', 
-                    maxWidth: '900px', 
-                    minHeight: '500px' 
+                    borderRadius: 2, // Softer corners
+                    overflow: 'hidden', // Crucial to prevent internal scrollbars from pushing content out
+                    width: '100%', // Take full width up to maxWidth
+                    maxWidth: '900px', // Limit the maximum width of the login box
+                    // maxHeight should now be relative to the flex item space provided by the padded Container.
+                    // Setting it to 100% means it will try to fill the available vertical space
+                    maxHeight: '100%', // which is now 100vh - paddingTop (3vh) - paddingBottom (0vh) = 97vh.
+                    // margin: 'auto', // Removed: Parent Container handles centering
                 }}
             >
                     {/* Image Section - Now a direct child Box acting as a flex item */}
@@ -80,14 +96,15 @@ const LoginPage = () => {
                         sx={{
                             display: { xs: 'none', sm: 'flex' }, // Hide on xs, show as flex on sm+
                             flex: { sm: 1, md: '0 0 50%' }, // Takes up space, or 50% basis on md+
-                            // On sm, it will take 1 part of available space if form section also has flex:1 or similar
-                            // Or more explicitly: flexBasis: { sm: '40%', md: '50%'},
-                            alignItems: 'center',
+                            alignItems: 'center', // Center content vertically within this Box
                             justifyContent: 'center',
+                            // Use padding here instead of on the Grid item
+                            // p: 3, // Padding inside the image section
                             p: 3, // Padding inside the image grid item
                             overflow: 'hidden', // Prevent image from overflowing its container
                         }}
                     >
+                        {/* The image itself */}
                         {/* Placeholder for your vector image */}
                         <Box    
                             component="img" // Render as an <img> tag
@@ -96,8 +113,8 @@ const LoginPage = () => {
                             sx={{ // Apply styles to the image itself
                                 width: '100%', // Image takes full width of its container
                                 height: 'auto', // Maintain aspect ratio
-                                maxWidth: '100%', // Ensure it doesn't overflow its container
-                                maxHeight: '100%', // Ensure image does not exceed the height of its container
+                                maxWidth: '100%', // Ensure image doesn't exceed the width of its container
+                                maxHeight: '100%', // Ensure image does not exceed the height of its container (relative to the Paper's height)
                                 objectFit: 'contain', // Scales image down to fit, maintaining aspect ratio
                             }}
                         /> {/* Ensure Box is self-closing for img component */}
@@ -105,13 +122,16 @@ const LoginPage = () => {
 
                     {/* Form Section */}
                     <Box 
-                        sx={{ 
+                        // This Box contains the form elements
+                        sx={{
                             flex: { sm: 1, md: '0 0 50%' }, // Takes up space, or 50% basis on md+
-                            // On sm, it will take 1 part of available space if image section also has flex:1 or similar
-                            // Or more explicitly: flexBasis: { sm: '60%', md: '50%'},
-                            p: { xs: 3, md: 5 }, 
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            overflow: 'auto' // In case form content is too long
+                            p: { xs: 3, md: 5 }, // Internal padding for the form section
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center', // Center form content vertically within this Box
+                            overflowY: 'hidden', // Prevent vertical scrolling within this Box
+                            // This is important if the Paper's height is constrained and form content is tall.
                         }}>
                         <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
                             <LockOutlinedIcon />
